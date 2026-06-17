@@ -1,6 +1,6 @@
 # acnehuatl
 
-**Āc nēhuātl?** — "Who am I?" (Nahuatl)
+**Āc nēhuātl?**, "Who am I?" (Nahuatl)
 
 A small Python utility that answers the one question a model cannot reliably answer about itself: *which model am I, running in which harness, right now?*
 
@@ -27,18 +27,18 @@ python3 acnehuatl.py --json             # machine-readable output
 
 ## Layout
 
-- `acnehuatl.py` — the script (single file, stdlib only)
-- `README.md` — this file
-- `docs/` — project tracking (see below)
+- `acnehuatl.py`: the script (single file, stdlib only)
+- `README.md`: this file
+- `docs/`: project tracking (see below)
 
 ## Development Documentation
 
 Project state is tracked in `docs/`:
 
-- [`docs/CONTEXT.md`](docs/CONTEXT.md) — current session state; **read this first**
-- [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) — phase progress tracker
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — architectural decisions (DEC-001..)
-- [`docs/chronicles/`](docs/chronicles/) — session-by-session history
+- [`docs/CONTEXT.md`](docs/CONTEXT.md): current session state; **read this first**
+- [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md): phase progress tracker
+- [`docs/DECISIONS.md`](docs/DECISIONS.md): architectural decisions (DEC-001..)
+- [`docs/chronicles/`](docs/chronicles/): session-by-session history
 
 ## Why
 

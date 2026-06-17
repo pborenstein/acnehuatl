@@ -1,8 +1,8 @@
 ---
-phase: 0 — Foundation
+phase: 0, Foundation
 updated: 2026-06-17
-last_commit: 60bd4b9
-last_entry: 2
+last_commit: 934124d
+last_entry: 3
 ---
 
 # Context
@@ -10,7 +10,7 @@ last_entry: 2
 ## Current Focus
 
 Working single-file CLI (`acnehuatl.py`) that identifies harness + model from
-session transcripts. Project tracking just established.
+session transcripts. Docs cleaned up to match style conventions.
 
 ## Active Tasks
 
@@ -24,10 +24,11 @@ None.
 
 ## Context
 
-- Single file, stdlib only — no venv/install needed (DEC-003)
+- Single file, stdlib only, no venv/install needed (DEC-003)
 - Reads transcript for ground truth, never asks the model (DEC-001)
 - Env-first harness detection, filesystem fallback (DEC-002)
 - Supports two harnesses: pi and Claude Code
+- Docs style: no em dashes, arrows (→) are fine, colons for list separators
 
 ## Next Session
 

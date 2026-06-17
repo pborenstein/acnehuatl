@@ -6,7 +6,7 @@ Architectural decisions for acnehuatl. One heading per decision.
 
 **Status**: Accepted
 
-**Context**: A model cannot reliably self-attribute its own identity — it
+**Context**: A model cannot reliably self-attribute its own identity. It
 hallucinates, flattens, or confidently misattributes (cf. the "you is ephemeral"
 memorandum, 2026-06-16).
 
@@ -48,7 +48,7 @@ off any features that would need external libraries.
 **Status**: Accepted
 
 **Context**: Harnesses encode cwd into a dir name by replacing `/` with `-`, but
-the exact on-disk form varies (single vs doubled dashes, trailing dashes).
+the exact on-disk form varies (single vs. doubled dashes, trailing dashes).
 
 **Decision**: Try an exact match first, then a forgiving match that collapses runs
 of dashes and ignores trailing-dash differences.
