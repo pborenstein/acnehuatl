@@ -29,6 +29,16 @@ python3 acnehuatl.py --json             # machine-readable output
 
 - `acnehuatl.py` — the script (single file, stdlib only)
 - `README.md` — this file
+- `docs/` — project tracking (see below)
+
+## Development Documentation
+
+Project state is tracked in `docs/`:
+
+- [`docs/CONTEXT.md`](docs/CONTEXT.md) — current session state; **read this first**
+- [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) — phase progress tracker
+- [`docs/DECISIONS.md`](docs/DECISIONS.md) — architectural decisions (DEC-001..)
+- [`docs/chronicles/`](docs/chronicles/) — session-by-session history
 
 ## Why
 
