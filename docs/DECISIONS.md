@@ -70,3 +70,27 @@ premise.
 
 **Consequences**: Simpler interface. The tool only answers the question it can
 answer reliably. Querying a remote cwd would require a different tool.
+
+### DEC-006: opencode ground truth is SQLite, not the JSONL (2026-06-17)
+
+**Status**: Accepted
+
+**Context**: opencode stores session files in `~/.claude/projects/` using the
+Claude Code JSONL format, which led to the assumption the existing Claude Code
+reader would work. It does not. opencode writes a hardcoded
+`message.model = "claude-sonnet-4-6"` into that JSONL for compatibility, while
+the actual invoked model is something else entirely (e.g. glm-5.2). Reading the
+JSONL returns the wrong model. DEC-001's premise (the transcript is ground truth)
+is violated by opencode's JSONL.
+
+**Decision**: For opencode sessions, read the real model from opencode's own
+SQLite database at `~/.local/share/opencode/opencode.db`. The `session` table has
+a `model` column holding JSON: `{"id":"...","providerID":"...","variant":"..."}`.
+Filter by `directory = os.getcwd()`, take the latest `time_updated`. The
+`providerID` is the provider (e.g. `zai-coding-plan`); `id` is the model
+(e.g. `glm-5.2`).
+
+**Consequences**: opencode needs its own reader (a SQLite query), not the JSONL
+walker. stdlib `sqlite3` is available, so DEC-003 (no third-party deps) holds.
+The harness is still detected from env (`OPENCODE=1`). The `~/.claude/` JSONL
+must not be trusted for opencode sessions.

@@ -57,7 +57,11 @@ def _detect_from_env():
     pi:           PI_CODING_AGENT (set to "true"), PI_CODING_AGENT_DIR,
                   PI_CODING_AGENT_SESSION_DIR
     Claude Code:  CLAUDE_CODE_*  (a whole family; any one implies CC)
+    opencode:     OPENCODE=1 (or OPENCODE_PID, OPENCODE_RUN_ID, etc.)
     """
+    # opencode sets OPENCODE=1 (and optionally other OPENCODE_* vars)
+    if os.environ.get("OPENCODE") or os.environ.get("OPENCODE_PID") or os.environ.get("OPENCODE_RUN_ID"):
+        return "opencode"
     # pi sets PI_CODING_AGENT=true (and optionally the dir/session vars)
     if os.environ.get("PI_CODING_AGENT") or os.environ.get("PI_CODING_AGENT_DIR") or os.environ.get("PI_CODING_AGENT_SESSION_DIR"):
         return "pi"
@@ -87,6 +91,9 @@ def detect_harness_session_dir(cwd: str):
             if sd.is_dir():
                 return ("pi", sd)
         return ("pi", _find_session_dir(pi_sessions_root, cwd))
+
+    if harness == "opencode":
+        return ("opencode", _find_session_dir(CC_DEFAULT_DIR, cwd))
 
     if harness == "claude-code":
         return ("claude-code", _find_session_dir(CC_DEFAULT_DIR, cwd))

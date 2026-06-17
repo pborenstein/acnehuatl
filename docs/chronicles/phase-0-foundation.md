@@ -70,3 +70,28 @@ transcript. A tampered transcript with terminal control sequences would be
 emitted to the terminal.
 
 **Files**: `acnehuatl.py`, `docs/reviews/2026-06-17-security-review.md`
+
+## Entry 6: opencode investigation (2026-06-17)
+
+**What**: Investigated why acnehuatl reports the wrong model under opencode
+(reported `claude-sonnet-4-6`, actual was `glm-5.2`). Cracked the case: the
+`~/.claude/projects/*.jsonl` files opencode writes hardcode `claude-sonnet-4-6`
+for compatibility and are not ground truth. The real model lives in opencode's
+SQLite DB (`~/.local/share/opencode/opencode.db`), `session.model` column, as
+JSON `{"id":"glm-5.2","providerID":"zai-coding-plan","variant":"default"}`.
+
+**Why**: opencode is a target harness. The tool is useless there if it returns a
+hardcoded Anthropic model name. The whole premise (transcript = ground truth)
+broke for opencode and had to be re-grounded.
+
+**How**:
+
+- Added opencode env detection (`OPENCODE=1`, `OPENCODE_PID`, `OPENCODE_RUN_ID`)
+- Confirmed via `sqlite3` that `session.model` holds the real provider + model
+- Uncommitted `acnehuatl.py` change: env detection works, but the opencode branch
+  still routes at the JSONL reader and returns the wrong model. SQLite reader is
+  the remaining work.
+
+**Decisions**: DEC-006 (opencode ground truth is SQLite, not the JSONL).
+
+**Files**: `acnehuatl.py` (uncommitted), `docs/CONTEXT.md`, `docs/DECISIONS.md`
