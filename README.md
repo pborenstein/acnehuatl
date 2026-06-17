@@ -4,17 +4,18 @@
 
 A small Python utility that answers the one question a model cannot reliably answer about itself: *which model am I, running in which harness, right now?*
 
-The model is the least authoritative source on its own identity. The harness transcript is ground truth. Both pi and Claude Code record the actual invoked model on every assistant message in their session log files. `acnehuatl` reads those files directly. No introspection, no self-report.
+The model is the least authoritative source on its own identity. The harness record is ground truth. pi and Claude Code write the actual invoked model into per-cwd JSONL logs; opencode stores it in a SQLite session database. `acnehuatl` reads the right source for whichever harness is running. No introspection, no self-report.
 
 ## What it does
 
 `acnehuatl` uses the current working directory to find the active session:
 
-1. **Detects the harness**: is this a pi session or a Claude Code session?
-2. **Finds the active session file**: the most recent `.jsonl` for this cwd.
-3. **Reads the current model**: walks the session log to find what model is actually generating the current turn:
+1. **Detects the harness**: pi, Claude Code, or opencode? (env vars first, filesystem fallback)
+2. **Finds the active session**: the most recent `.jsonl` for this cwd (pi, Claude Code), or the SQLite session row for this cwd (opencode).
+3. **Reads the current model**: walks the session record to find what model is actually generating the current turn:
    - **pi:** the most recent `model_change` entry, falling back to the first assistant message's `provider`/`model`.
    - **Claude Code:** the most recent assistant message's `message.model` field.
+   - **opencode:** the `session.model` JSON column from `~/.local/share/opencode/opencode.db` (the `~/.claude/` JSONL opencode writes is not ground truth).
 4. **Returns** `(harness, provider, model)`.
 
 ## Usage
