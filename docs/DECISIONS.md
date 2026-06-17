@@ -55,3 +55,18 @@ of dashes and ignores trailing-dash differences.
 
 **Consequences**: Survives encoding quirks across harnesses without hardcoding each
 variant. Small risk of collision between cwds that differ only by dash runs.
+
+### DEC-005: No cwd argument, always use $PWD (2026-06-17)
+
+**Status**: Accepted
+
+**Context**: The tool's purpose is "who am I?" not "who is running over there?"
+A remote cwd can't use env-var detection (the authoritative path), so it falls
+back to the ambiguous filesystem scan. Supporting it undermines the tool's
+premise.
+
+**Decision**: Remove the optional cwd argument. `identify()` always uses
+`os.getcwd()`.
+
+**Consequences**: Simpler interface. The tool only answers the question it can
+answer reliably. Querying a remote cwd would require a different tool.

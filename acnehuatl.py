@@ -10,9 +10,8 @@ assistant message records the model that actually generated it. This
 script reads those files and reports ground truth.
 
 Usage:
-    acnehuatl.py [cwd] [--json]
+    acnehuatl.py [--json]
 
-    cwd   working directory to identify (default: $PWD)
     --json  emit JSON instead of human-readable text
 
 Exit codes:
@@ -204,12 +203,13 @@ def read_claude_code(session_file: Path):
 
 # ---------- entry point ----------
 
-def identify(cwd: str):
+def identify():
     """
     Returns a dict:
       {harness, provider, model, session_file, cwd}
     harness/provider/model may be None if undeterminable.
     """
+    cwd = os.getcwd()
     harness, session_dir = detect_harness_session_dir(cwd)
     result = {"harness": harness, "provider": None, "model": None,
               "session_file": None, "cwd": cwd}
@@ -245,7 +245,6 @@ def _emit(result: dict, as_json: bool):
 
 
 def main(argv):
-    cwd = None
     as_json = False
     for a in argv[1:]:
         if a == "--json":
@@ -253,10 +252,7 @@ def main(argv):
         elif a in ("-h", "--help"):
             print(__doc__)
             return 0
-        elif not a.startswith("-"):
-            cwd = a
-    cwd = cwd or os.getcwd()
-    result = identify(cwd)
+    result = identify()
     _emit(result, as_json)
     if result.get("model"):
         return 0

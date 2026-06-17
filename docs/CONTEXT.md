@@ -1,8 +1,8 @@
 ---
 phase: 0, Foundation
 updated: 2026-06-17
-last_commit: 9c60c4e
-last_entry: 3
+last_commit: e6fbf56
+last_entry: 4
 ---
 
 # Context
@@ -10,7 +10,7 @@ last_entry: 3
 ## Current Focus
 
 Working single-file CLI (`acnehuatl.py`) that identifies harness + model from
-session transcripts. Docs cleaned up to match style conventions.
+session transcripts. Removed cwd argument; tool now only answers "who am I?"
 
 ## Active Tasks
 
@@ -27,6 +27,7 @@ None.
 - Single file, stdlib only, no venv/install needed (DEC-003)
 - Reads transcript for ground truth, never asks the model (DEC-001)
 - Env-first harness detection, filesystem fallback (DEC-002)
+- No cwd argument; always uses $PWD (DEC-005)
 - Supports two harnesses: pi and Claude Code
 - Docs style: no em dashes, arrows (→) are fine, colons for list separators
 

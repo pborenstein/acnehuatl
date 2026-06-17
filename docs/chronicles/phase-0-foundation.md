@@ -44,3 +44,16 @@ arrows and colons are the preferred separators.
 
 **Files**: `README.md`, `docs/CONTEXT.md`, `docs/DECISIONS.md`,
 `docs/IMPLEMENTATION.md`, `docs/chronicles/phase-0-foundation.md`
+
+## Entry 4: Remove cwd argument (2026-06-17)
+
+**What**: Removed the optional cwd argument from `identify()` and the CLI.
+The tool now always uses `os.getcwd()`.
+
+**Why**: "Who am I?" is the only question the tool can answer reliably. A remote
+cwd bypasses env-var detection and falls back to ambiguous filesystem scanning.
+"Who is running over there?" is a different tool.
+
+**Decisions**: DEC-005 (no cwd argument, always $PWD).
+
+**Files**: `acnehuatl.py`, `README.md`

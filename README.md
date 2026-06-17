@@ -8,10 +8,10 @@ The model is the least authoritative source on its own identity. The harness tra
 
 ## What it does
 
-Given a working directory (cwd), `acnehuatl`:
+`acnehuatl` uses the current working directory to find the active session:
 
-1. **Detects the harness**: is this a pi session or a Claude Code session? (Based on which session directory exists for the cwd.)
-2. **Finds the active session file**: the most recent `.jsonl` for that cwd.
+1. **Detects the harness**: is this a pi session or a Claude Code session?
+2. **Finds the active session file**: the most recent `.jsonl` for this cwd.
 3. **Reads the current model**: walks the session log to find what model is actually generating the current turn:
    - **pi:** the most recent `model_change` entry, falling back to the first assistant message's `provider`/`model`.
    - **Claude Code:** the most recent assistant message's `message.model` field.
@@ -20,9 +20,8 @@ Given a working directory (cwd), `acnehuatl`:
 ## Usage
 
 ```bash
-python3 acnehuatl.py                    # reports for the current cwd
-python3 acnehuatl.py /path/to/vault     # reports for a given cwd
-python3 acnehuatl.py --json             # machine-readable output
+python3 acnehuatl.py          # human-readable output
+python3 acnehuatl.py --json   # machine-readable output
 ```
 
 ## Layout
