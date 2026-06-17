@@ -1,16 +1,16 @@
 ---
 phase: 0, Foundation
 updated: 2026-06-17
-last_commit: e6fbf56
-last_entry: 4
+last_commit: d2e00ff
+last_entry: 5
 ---
 
 # Context
 
 ## Current Focus
 
-Working single-file CLI (`acnehuatl.py`) that identifies harness + model from
-session transcripts. Removed cwd argument; tool now only answers "who am I?"
+Working single-file CLI. Security review completed (v4, all actionable findings
+resolved). Ready for shim work or other feature tasks.
 
 ## Active Tasks
 
@@ -28,7 +28,8 @@ None.
 - Reads transcript for ground truth, never asks the model (DEC-001)
 - Env-first harness detection, filesystem fallback (DEC-002)
 - No cwd argument; always uses $PWD (DEC-005)
-- Supports two harnesses: pi and Claude Code
+- Human-readable output strips non-printable characters (`_safe()`)
+- Security review in `docs/reviews/2026-06-17-security-review.md` (v4)
 - Docs style: no em dashes, arrows (→) are fine, colons for list separators
 
 ## Next Session

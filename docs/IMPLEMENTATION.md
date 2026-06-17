@@ -23,6 +23,9 @@ harness session transcript (ground truth) rather than asking the model
 - cwd → session-dir name encoding with forgiving (collapsed-dash) match
 - Per-harness transcript readers: pi (`model_change` + assistant messages), Claude Code (assistant `message.model`)
 - Human-readable and `--json` output; exit codes 0/1/2
+- No cwd argument; always uses `os.getcwd()` (DEC-005)
+- Control-char stripping in human-readable output (`_safe()`)
+- Security review (v4): all actionable findings resolved
 
 **Next / future ideas**:
 

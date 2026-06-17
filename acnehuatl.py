@@ -228,14 +228,18 @@ def identify():
     return result
 
 
+def _safe(s: str) -> str:
+    return "".join(c if c.isprintable() else "" for c in s)
+
+
 def _emit(result: dict, as_json: bool):
     if as_json:
         print(json.dumps(result, indent=2))
         return
-    h = result.get("harness") or "(unknown harness)"
-    p = result.get("provider") or "(unknown provider)"
-    m = result.get("model") or "(unknown model)"
-    sf = result.get("session_file") or "(no session file)"
+    h = _safe(result.get("harness") or "(unknown harness)")
+    p = _safe(result.get("provider") or "(unknown provider)")
+    m = _safe(result.get("model") or "(unknown model)")
+    sf = _safe(result.get("session_file") or "(no session file)")
     cwd = result.get("cwd")
     print(f"harness:   {h}")
     print(f"provider:  {p}")

@@ -57,3 +57,16 @@ cwd bypasses env-var detection and falls back to ambiguous filesystem scanning.
 **Decisions**: DEC-005 (no cwd argument, always $PWD).
 
 **Files**: `acnehuatl.py`, `README.md`
+
+## Entry 5: Security review and Finding 2 fix (2026-06-17)
+
+**What**: Security review conducted by glm-5.2 (pi), went through v1-v3.
+Finding 1 (cwd arg path-steering) was already resolved by Entry 4. Fixed
+Finding 2: added `_safe()` to strip non-printable characters from
+transcript-sourced strings in human-readable output. Review updated to v4.
+
+**Why**: Human-readable output printed raw model/provider strings from the
+transcript. A tampered transcript with terminal control sequences would be
+emitted to the terminal.
+
+**Files**: `acnehuatl.py`, `docs/reviews/2026-06-17-security-review.md`
