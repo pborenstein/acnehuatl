@@ -95,3 +95,31 @@ broke for opencode and had to be re-grounded.
 **Decisions**: DEC-006 (opencode ground truth is SQLite, not the JSONL).
 
 **Files**: `acnehuatl.py` (uncommitted), `docs/CONTEXT.md`, `docs/DECISIONS.md`
+
+## Entry 7: opencode SQLite reader (2026-06-17)
+
+**What**: Implemented `read_opencode()` in `acnehuatl.py`, completing opencode
+support. Routes opencode sessions to a read-only SQLite query against
+`~/.local/share/opencode/opencode.db` instead of the fake JSONL. `identify()`
+now branches: opencode queries the DB by cwd; pi/Claude Code keep the JSONL flow.
+
+**Why**: Entry 6 left the reader unwired. The JSONL branch returned a hardcoded
+`claude-sonnet-4-6`, so opencode was unusable until the real source was read.
+
+**How**:
+
+- `read_opencode(cwd)`: opens the DB read-only (`mode=ro`, URI), runs a
+  parameterized `SELECT model, id FROM session WHERE directory = ? ORDER BY
+  time_updated DESC LIMIT 1`, parses the `model` JSON (`providerID`, `id`)
+- `identify()` calls `read_opencode()` and returns `(provider, model, session_id)`
+  before reaching the JSONL path
+- `detect_harness_session_dir()` returns `("opencode", None)`; opencode has no
+  session dir, only the DB
+
+**Verified**: live-tested across three incarnations switched mid-session:
+`glm-5.2` (zai-coding-plan), `glm-4.7`, `deepseek-v4-flash-free` (opencode). All
+reported correctly.
+
+**Decisions**: DEC-006.
+
+**Files**: `acnehuatl.py`, `docs/CONTEXT.md`, `docs/IMPLEMENTATION.md`

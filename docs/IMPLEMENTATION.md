@@ -26,13 +26,11 @@ harness session transcript (ground truth) rather than asking the model
 - No cwd argument; always uses `os.getcwd()` (DEC-005)
 - Control-char stripping in human-readable output (`_safe()`)
 - Security review (v4): all actionable findings resolved
-- opencode env detection (`OPENCODE=1`); model reader NOT yet wired (DEC-006)
+- opencode env detection (`OPENCODE=1`) + SQLite model reader (DEC-006)
 
 **In progress**:
 
-- opencode support: env detection done; needs a SQLite reader against
-  `~/.local/share/opencode/opencode.db` (`session.model` JSON column). The
-  `~/.claude/` JSONL is fake for opencode and must not be used.
+- _(none currently)_
 
 **Next / future ideas**:
 

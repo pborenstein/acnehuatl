@@ -5,9 +5,11 @@ acnehuatl — Āc nēhuātl? "Who am I?"
 Identify the current harness + model by reading the session transcript,
 NOT by asking the model (which cannot reliably self-attribute).
 
-Both pi and Claude Code write a JSONL session log keyed by cwd. Each
-assistant message records the model that actually generated it. This
-script reads those files and reports ground truth.
+pi and Claude Code write a JSONL session log keyed by cwd; each assistant
+message records the model that actually generated it. opencode stores its
+ground truth in a SQLite DB instead: its ~/.claude/ JSONL hardcodes a fake
+model for compatibility (see DEC-006). This script reads the right source
+per harness and reports it.
 
 Usage:
     acnehuatl.py [--json]
@@ -46,6 +48,7 @@ def _session_key(cwd: str) -> str:
 
 PI_DEFAULT_DIR = Path.home() / ".pi" / "agent"
 CC_DEFAULT_DIR = Path.home() / ".claude" / "projects"
+OPENCODE_DB = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
 
 
 def _detect_from_env():
@@ -93,7 +96,9 @@ def detect_harness_session_dir(cwd: str):
         return ("pi", _find_session_dir(pi_sessions_root, cwd))
 
     if harness == "opencode":
-        return ("opencode", _find_session_dir(CC_DEFAULT_DIR, cwd))
+        # opencode ground truth is the SQLite DB, not a session dir. The
+        # dir is unused for opencode; read_opencode() queries the DB by cwd.
+        return ("opencode", None)
 
     if harness == "claude-code":
         return ("claude-code", _find_session_dir(CC_DEFAULT_DIR, cwd))
@@ -208,6 +213,41 @@ def read_claude_code(session_file: Path):
     return ("anthropic", model)
 
 
+def read_opencode(cwd: str):
+    """Read the real model from opencode's SQLite session DB.
+
+    opencode stores ground truth in ~/.local/share/opencode/opencode.db.
+    The `session` table has a `model` column holding JSON:
+        {"id": "glm-5.2", "providerID": "zai-coding-plan", "variant": "default"}
+    The `~/.claude/` JSONL is NOT ground truth for opencode (DEC-006); it
+    hardcodes "claude-sonnet-4-6".
+
+    Returns (provider, model, session_id). Any may be None if not found.
+    """
+    import sqlite3
+    if not OPENCODE_DB.is_file():
+        return (None, None, None)
+    try:
+        # Read-only, parameterized: no writes, no injection.
+        con = sqlite3.connect(f"file:{OPENCODE_DB}?mode=ro", uri=True)
+        row = con.execute(
+            "SELECT model, id FROM session WHERE directory = ? "
+            "ORDER BY time_updated DESC LIMIT 1",
+            (cwd,),
+        ).fetchone()
+        con.close()
+    except sqlite3.Error:
+        return (None, None, None)
+    if not row:
+        return (None, None, None)
+    model_json, session_id = row
+    try:
+        m = json.loads(model_json)
+    except (json.JSONDecodeError, TypeError):
+        return (None, None, session_id)
+    return (m.get("providerID"), m.get("id"), session_id)
+
+
 # ---------- entry point ----------
 
 def identify():
@@ -222,6 +262,14 @@ def identify():
               "session_file": None, "cwd": cwd}
     if harness is None:
         return result
+
+    if harness == "opencode":
+        provider, model, session_id = read_opencode(cwd)
+        result["provider"] = provider
+        result["model"] = model
+        result["session_file"] = session_id
+        return result
+
     sf = _latest_session(session_dir)
     result["session_file"] = str(sf) if sf else None
     if sf is None:
