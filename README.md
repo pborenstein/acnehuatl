@@ -80,7 +80,7 @@ It printed the current harness, provider, model, session path, and working direc
 
 ## Development Documentation
 
-Project state is tracked in `docs/`:
+`acnehuatl` uses [handoff](https://github.com/pborenstein/handoff), a collection of skills to track the project state is tracked in `docs/`:
 
 - [`docs/CONTEXT.md`](docs/CONTEXT.md): current session state; Code harnesses: **read this first**
 - [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md): phase progress tracker
@@ -92,7 +92,7 @@ Project state is tracked in `docs/`:
 
 The code was written by GLM-5.1 and GLM-5.2 running under `pi`. The need was all mine. 
 
-Āc nēhuātl is "who am I" in Nahuatl.
+_Āc nēhuātl_ is "who am I" in Nahuatl.
 
 It's important to track provenance in my projects. I need to know whether a human or an LLM wrote a particular  chunk of text.
 
