@@ -123,3 +123,33 @@ reported correctly.
 **Decisions**: DEC-006.
 
 **Files**: `acnehuatl.py`, `docs/CONTEXT.md`, `docs/IMPLEMENTATION.md`
+
+## Entry 8: Remove filesystem fallback for harness detection (2026-06-18)
+
+**What**: Removed the filesystem-guessing fallback in
+`detect_harness_session_dir`. When no harness env var is set, the function now
+returns `(None, None)` and the tool reports unknown (cwd only) instead of
+guessing a harness from leftover session dirs.
+
+**Why**: Running acnehuatl inside Crush (which exports none of
+`PI_CODING_AGENT*`, `CLAUDE_CODE_*`, `OPENCODE*`) reported `harness: pi` by
+finding a stale pi session dir for the same cwd, then read a model from that
+old transcript. Nothing about that output described the current process. The
+tool's premise is reliable self-identification; a plausible-but-wrong guess is
+worse than an honest unknown.
+
+**How**:
+
+- Deleted the no-env fallback block that scanned pi/Claude Code session roots
+- Filesystem matching still used *within* a known harness to locate that
+  harness's own session dir, never to decide *which* harness is running
+- Updated README, CONTEXT, DECISIONS; added DEC-007, marked DEC-002 partially
+  superseded
+
+**Verified**: pi/claude-code/opencode env branches unchanged and correct;
+clean env now reports unknown with exit 1.
+
+**Decisions**: DEC-007 (no filesystem fallback).
+
+**Files**: `acnehuatl.py`, `README.md`, `docs/CONTEXT.md`, `docs/DECISIONS.md`,
+`docs/IMPLEMENTATION.md`

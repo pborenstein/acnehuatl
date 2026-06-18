@@ -19,7 +19,7 @@ for the cwd. Requires knowing each harness's on-disk layout and message schema.
 
 ### DEC-002: Env vars first, filesystem fallback (2026-06-16)
 
-**Status**: Accepted
+**Status**: Partially superseded by DEC-007 (filesystem fallback removed)
 
 **Context**: Multiple harnesses may have written session dirs for the same cwd;
 filesystem-only detection is ambiguous.
@@ -94,3 +94,30 @@ Filter by `directory = os.getcwd()`, take the latest `time_updated`. The
 walker. stdlib `sqlite3` is available, so DEC-003 (no third-party deps) holds.
 The harness is still detected from env (`OPENCODE=1`). The `~/.claude/` JSONL
 must not be trusted for opencode sessions.
+
+### DEC-007: No filesystem fallback for harness detection (2026-06-18)
+
+**Status**: Accepted
+
+**Context**: DEC-002 fell back to scanning known session roots when no harness
+env var was set. That fallback guessed the harness from which session dirs
+exist for the cwd, which is unsound: a leftover session dir from a *previous*
+run of a different harness gets reported as the current one. Observed in the
+wild — acnehuatl run inside Crush (which sets none of `PI_CODING_AGENT*`,
+`CLAUDE_CODE_*`, `OPENCODE*`) reported `harness: pi` by finding a stale pi
+session dir for the same cwd, then read a model from that old transcript.
+Nothing about that output was true of the current process. acnehuatl's whole
+premise is reliable self-identification; a plausible-but-wrong guess is worse
+than an honest "unknown".
+
+**Decision**: Harness detection is env-var-only. When no harness env var is
+present, `detect_harness_session_dir` returns `(None, None)`; `identify`
+reports the cwd with harness/provider/model as unknown (exit code 1). The
+filesystem is still used *within* a known harness to locate that harness's
+session dir, but never to decide *which* harness is running.
+
+**Consequences**: Running outside any supported harness now honestly reports
+"unknown" instead of a wrong guess. acnehuatl can no longer identify a
+harness that does not export an env var; future harness support must be added
+as an env-var branch in `_detect_from_env`. The cwd is always reported, so
+callers still know where the lookup was attempted.

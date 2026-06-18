@@ -77,9 +77,12 @@ def _detect_from_env():
 def detect_harness_session_dir(cwd: str):
     """Return (harness_name, session_dir_path) or (None, None).
 
-    Detection order:
-      1. Env vars (ground truth — which harness is THIS process running under)
-      2. Filesystem fallback (which session dirs exist for this cwd)
+    Detection is env-var-only and authoritative. If no harness env var is
+    set we cannot know which harness is running THIS process: the filesystem
+    only shows which sessions exist for this cwd, not which one is current.
+    Guessing would risk reporting a stale or other harness, so we return
+    (None, None) and let the caller report the cwd as unknown. Never report
+    a harness/model we are not sure is correct.
     """
     harness = _detect_from_env()
 
@@ -103,13 +106,11 @@ def detect_harness_session_dir(cwd: str):
     if harness == "claude-code":
         return ("claude-code", _find_session_dir(CC_DEFAULT_DIR, cwd))
 
-    # No env signal — filesystem fallback (best effort, may be ambiguous)
-    pi_found = _find_session_dir(pi_sessions_root, cwd)
-    if pi_found:
-        return ("pi", pi_found)
-    cc_found = _find_session_dir(CC_DEFAULT_DIR, cwd)
-    if cc_found:
-        return ("claude-code", cc_found)
+    # No env signal — we cannot know which harness is running THIS process.
+    # The filesystem only shows which sessions exist for this cwd, not which
+    # one is current, so guessing would risk reporting a stale harness (this
+    # is how a leftover pi session dir would be misreported under another
+    # harness). Return unknown; the caller still reports the cwd.
     return (None, None)
 
 

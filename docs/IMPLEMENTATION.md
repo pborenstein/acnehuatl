@@ -18,8 +18,7 @@ harness session transcript (ground truth) rather than asking the model
 **Completed**:
 
 - `acnehuatl.py`: single-file CLI, stdlib only
-- Env-based harness detection (pi via `PI_CODING_AGENT*`, Claude Code via `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`)
-- Filesystem fallback when env signal is absent
+- Env-only harness detection (pi via `PI_CODING_AGENT*`, Claude Code via `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`, opencode via `OPENCODE*`); no filesystem fallback (DEC-007)
 - cwd → session-dir name encoding with forgiving (collapsed-dash) match
 - Per-harness transcript readers: pi (`model_change` + assistant messages), Claude Code (assistant `message.model`)
 - Human-readable and `--json` output; exit codes 0/1/2

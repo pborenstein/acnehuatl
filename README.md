@@ -63,7 +63,7 @@ It printed the current harness, provider, model, session path, and working direc
 
 `acnehuatl` uses the current working directory to find the active session:
 
-1. **Detects the harness**: pi, Claude Code, or opencode? (env vars first, filesystem fallback)
+1. **Detects the harness**: pi, Claude Code, or opencode? From inherited env vars only (`PI_CODING_AGENT*`, `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`, `OPENCODE*`). If none are set, the harness is reported as unknown rather than guessed — the filesystem can show which sessions exist for a cwd, but never which harness is running now.
 2. **Finds the active session**: the most recent `.jsonl` for this cwd (pi, Claude Code), or the SQLite session row for this cwd (opencode).
 3. **Reads the current model**: walks the session record to find what model is actually generating the current turn:
    - **pi:** the most recent `model_change` entry, falling back to the first assistant message's `provider`/`model`.
