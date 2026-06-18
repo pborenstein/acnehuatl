@@ -63,12 +63,13 @@ It printed the current harness, provider, model, session path, and working direc
 
 `acnehuatl` uses the current working directory to find the active session:
 
-1. **Detects the harness**: pi, Claude Code, or opencode? From inherited env vars only (`PI_CODING_AGENT*`, `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`, `OPENCODE*`). If none are set, the harness is reported as unknown rather than guessed — the filesystem can show which sessions exist for a cwd, but never which harness is running now.
-2. **Finds the active session**: the most recent `.jsonl` for this cwd (pi, Claude Code), or the SQLite session row for this cwd (opencode).
+1. **Detects the harness**: pi, Claude Code, opencode, or Crush? From inherited env vars only (`PI_CODING_AGENT*`, `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`, `OPENCODE*`, `CRUSH`/`AGENT=crush`). If none are set, the harness is reported as unknown rather than guessed — the filesystem can show which sessions exist for a cwd, but never which harness is running now.
+2. **Finds the active session**: the most recent `.jsonl` for this cwd (pi, Claude Code), or the SQLite session row for this cwd (opencode, Crush).
 3. **Reads the current model**: walks the session record to find what model is actually generating the current turn:
    - **pi:** the most recent `model_change` entry, falling back to the first assistant message's `provider`/`model`.
    - **Claude Code:** the most recent assistant message's `message.model` field.
    - **opencode:** the `session.model` JSON column from `~/.local/share/opencode/opencode.db` (the `~/.claude/` JSONL opencode writes is not ground truth).
+   - **Crush:** the `model`/`provider` of the most recent assistant message in the latest session, from the per-project DB at `<cwd>/.crush/crush.db`.
 4. **Returns** `(harness, provider, model)`.
 
 

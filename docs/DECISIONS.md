@@ -121,3 +121,28 @@ session dir, but never to decide *which* harness is running.
 harness that does not export an env var; future harness support must be added
 as an env-var branch in `_detect_from_env`. The cwd is always reported, so
 callers still know where the lookup was attempted.
+
+### DEC-008: Crush detection via per-project SQLite DB (2026-06-18)
+
+**Status**: Accepted
+
+**Context**: Crush is a fourth harness that exports `CRUSH=1` (and
+`AGENT=crush` / `AI_AGENT=crush`). It was the harness that exposed DEC-007:
+run inside Crush, the deleted filesystem fallback misreported it as pi.
+Crush stores ground truth in a per-project SQLite DB at `<cwd>/.crush/crush.db`,
+not a JSONL. Its `messages` table has `model` and `provider` columns per
+assistant message, and mid-session model switches are recorded as separate
+rows (observed `glm-4.7` and `glm-5.1` in one session).
+
+**Decision**: Detect Crush from `CRUSH`/`AGENT`/`AI_AGENT` env vars in
+`_detect_from_env`. Add `read_crush(cwd)` which opens
+`<cwd>/.crush/crush.db` read-only, takes the latest session by
+`updated_at`, then the most recent assistant message with a non-empty `model`.
+The current model = that latest assistant message's `model`/`provider`
+(last-one-wins, like Claude Code).
+
+**Consequences**: Crush is now a first-class detected harness. The per-project
+DB location means the cwd must be readable and the DB must exist; if absent,
+the harness is detected (via env) but model/provider are reported unknown
+(honest, exit 1), consistent with opencode when its DB is missing. stdlib
+`sqlite3` is reused, so DEC-003 (no third-party deps) holds.

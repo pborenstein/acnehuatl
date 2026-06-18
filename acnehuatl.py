@@ -61,7 +61,11 @@ def _detect_from_env():
                   PI_CODING_AGENT_SESSION_DIR
     Claude Code:  CLAUDE_CODE_*  (a whole family; any one implies CC)
     opencode:     OPENCODE=1 (or OPENCODE_PID, OPENCODE_RUN_ID, etc.)
+    Crush:        CRUSH=1 (also AGENT=crush / AI_AGENT=crush)
     """
+    # Crush sets CRUSH=1 (and AGENT/AI_AGENT=crush)
+    if os.environ.get("CRUSH") or os.environ.get("AGENT") == "crush" or os.environ.get("AI_AGENT") == "crush":
+        return "crush"
     # opencode sets OPENCODE=1 (and optionally other OPENCODE_* vars)
     if os.environ.get("OPENCODE") or os.environ.get("OPENCODE_PID") or os.environ.get("OPENCODE_RUN_ID"):
         return "opencode"
@@ -102,6 +106,11 @@ def detect_harness_session_dir(cwd: str):
         # opencode ground truth is the SQLite DB, not a session dir. The
         # dir is unused for opencode; read_opencode() queries the DB by cwd.
         return ("opencode", None)
+
+    if harness == "crush":
+        # Crush ground truth is a per-project SQLite DB at <cwd>/.crush/crush.db.
+        # The dir is unused for crush; read_crush() opens the DB by cwd.
+        return ("crush", None)
 
     if harness == "claude-code":
         return ("claude-code", _find_session_dir(CC_DEFAULT_DIR, cwd))
@@ -249,6 +258,44 @@ def read_opencode(cwd: str):
     return (m.get("providerID"), m.get("id"), session_id)
 
 
+def read_crush(cwd: str):
+    """Read the real model from Crush's per-project SQLite session DB.
+
+    Crush stores a session DB at <cwd>/.crush/crush.db. The `messages` table
+    has `model` and `provider` columns per assistant message; the current
+    model is the most recent assistant message's model in the latest session.
+    Like opencode (DEC-006), the DB is ground truth, not any JSONL.
+
+    Returns (provider, model, session_id). Any may be None if not found.
+    """
+    import sqlite3
+    db = Path(cwd) / ".crush" / "crush.db"
+    if not db.is_file():
+        return (None, None, None)
+    try:
+        # Read-only, parameterized: no writes, no injection.
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        srow = con.execute(
+            "SELECT id FROM sessions ORDER BY updated_at DESC LIMIT 1"
+        ).fetchone()
+        if not srow:
+            con.close()
+            return (None, None, None)
+        session_id = srow[0]
+        mrow = con.execute(
+            "SELECT provider, model FROM messages "
+            "WHERE session_id = ? AND role = 'assistant' AND model != '' "
+            "ORDER BY created_at DESC LIMIT 1",
+            (session_id,),
+        ).fetchone()
+        con.close()
+    except sqlite3.Error:
+        return (None, None, None)
+    if not mrow:
+        return (None, None, session_id)
+    return (mrow[0], mrow[1], session_id)
+
+
 # ---------- entry point ----------
 
 def identify():
@@ -266,6 +313,13 @@ def identify():
 
     if harness == "opencode":
         provider, model, session_id = read_opencode(cwd)
+        result["provider"] = provider
+        result["model"] = model
+        result["session_file"] = session_id
+        return result
+
+    if harness == "crush":
+        provider, model, session_id = read_crush(cwd)
         result["provider"] = provider
         result["model"] = model
         result["session_file"] = session_id

@@ -18,14 +18,15 @@ harness session transcript (ground truth) rather than asking the model
 **Completed**:
 
 - `acnehuatl.py`: single-file CLI, stdlib only
-- Env-only harness detection (pi via `PI_CODING_AGENT*`, Claude Code via `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`, opencode via `OPENCODE*`); no filesystem fallback (DEC-007)
+- Env-only harness detection (pi via `PI_CODING_AGENT*`, Claude Code via `CLAUDE_CODE_*`/`CLAUDE_PROJECT_DIR`, opencode via `OPENCODE*`, Crush via `CRUSH`/`AGENT=crush`); no filesystem fallback (DEC-007)
 - cwd → session-dir name encoding with forgiving (collapsed-dash) match
-- Per-harness transcript readers: pi (`model_change` + assistant messages), Claude Code (assistant `message.model`)
+- Per-harness transcript readers: pi (`model_change` + assistant messages), Claude Code (assistant `message.model`), opencode (SQLite `session.model`), Crush (SQLite `messages.model`)
 - Human-readable and `--json` output; exit codes 0/1/2
 - No cwd argument; always uses `os.getcwd()` (DEC-005)
 - Control-char stripping in human-readable output (`_safe()`)
 - Security review (v4): all actionable findings resolved
 - opencode env detection (`OPENCODE=1`) + SQLite model reader (DEC-006)
+- Crush env detection (`CRUSH=1`/`AGENT=crush`) + per-project SQLite reader (DEC-008)
 
 **In progress**:
 

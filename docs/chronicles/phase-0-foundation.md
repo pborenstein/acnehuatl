@@ -153,3 +153,35 @@ clean env now reports unknown with exit 1.
 
 **Files**: `acnehuatl.py`, `README.md`, `docs/CONTEXT.md`, `docs/DECISIONS.md`,
 `docs/IMPLEMENTATION.md`
+
+## Entry 9: Crush harness support (2026-06-18)
+
+**What**: Added Crush as a fourth detected harness. Env detection via
+`CRUSH`/`AGENT=crush`/`AI_AGENT=crush`; reads the model from Crush's
+per-project SQLite DB at `<cwd>/.crush/crush.db`.
+
+**Why**: Crush was the harness that exposed DEC-007 (its sessions were
+misreported as pi by the deleted filesystem fallback). Having removed that
+fallback, the honest fix is to teach acnehuatl about Crush directly so it
+reports correctly instead of unknown.
+
+**How**:
+
+- `_detect_from_env()`: added Crush branch (checks `CRUSH`, `AGENT=crush`,
+  `AI_AGENT=crush`)
+- `detect_harness_session_dir()`: returns `("crush", None)` (no session dir;
+  the DB is per-project)
+- `read_crush(cwd)`: opens `<cwd>/.crush/crush.db` read-only (`mode=ro`,
+  URI), takes the latest session by `updated_at`, then the most recent
+  assistant message with a non-empty `model`. Current model = that message's
+  `model`/`provider` (last-one-wins, like Claude Code)
+- `identify()`: wired the crush branch alongside opencode
+
+**Verified**: live mid-session model switches observed in the same Crush
+session (`glm-4.7`, `glm-5.1`, `claude-haiku-4-5`); all reported correctly.
+pi/claude-code/opencode/unknown paths unchanged.
+
+**Decisions**: DEC-008 (Crush detection via per-project SQLite DB).
+
+**Files**: `acnehuatl.py`, `README.md`, `docs/CONTEXT.md`, `docs/DECISIONS.md`,
+`docs/IMPLEMENTATION.md`
