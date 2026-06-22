@@ -12,9 +12,15 @@ model for compatibility (see DEC-006). This script reads the right source
 per harness and reports it.
 
 Usage:
-    acnehuatl.py [--json]
+    acnehuatl.py [--json | --label]
 
-    --json  emit JSON instead of human-readable text
+    --json   emit JSON instead of human-readable text
+    --label  emit a single line: provider/model (harness)
+             nothing else, no trailing text. Intended to be captured
+             verbatim by a caller, e.g. LABEL=$(acnehuatl.py --label).
+             Exits non-zero (and prints nothing) if the model cannot
+             be determined — callers should treat that as fatal and
+             never substitute a guessed value.
 
 Exit codes:
     0  found
@@ -342,6 +348,21 @@ def _safe(s: str) -> str:
     return "".join(c if c.isprintable() else "" for c in s)
 
 
+def label(result: dict):
+    """Return the canonical incarnation string 'provider/model (harness)',
+    or None if the model could not be determined.
+
+    This is the single source of truth for the incarnation label. Callers
+    must capture it verbatim and never reconstruct or guess it.
+    """
+    model = result.get("model")
+    if not model:
+        return None
+    provider = result.get("provider") or "unknown"
+    harness = result.get("harness") or "unknown"
+    return f"{provider}/{model} ({harness})"
+
+
 def _emit(result: dict, as_json: bool):
     if as_json:
         print(json.dumps(result, indent=2))
@@ -360,13 +381,30 @@ def _emit(result: dict, as_json: bool):
 
 def main(argv):
     as_json = False
+    as_label = False
     for a in argv[1:]:
         if a == "--json":
             as_json = True
+        elif a == "--label":
+            as_label = True
         elif a in ("-h", "--help"):
             print(__doc__)
             return 0
     result = identify()
+
+    if as_label:
+        # Label mode: print ONLY the canonical incarnation string, and only
+        # if it could be determined. On failure print nothing to stdout so a
+        # caller using $(...) gets an empty string and a non-zero exit — it
+        # must stop rather than substitute a guess.
+        lbl = label(result)
+        if lbl is None:
+            if not result.get("session_file"):
+                return 1
+            return 2
+        print(lbl)
+        return 0
+
     _emit(result, as_json)
     if result.get("model"):
         return 0
