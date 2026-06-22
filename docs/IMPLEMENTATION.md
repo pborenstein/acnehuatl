@@ -27,6 +27,7 @@ harness session transcript (ground truth) rather than asking the model
 - Security review (v4): all actionable findings resolved
 - opencode env detection (`OPENCODE=1`) + SQLite model reader (DEC-006)
 - Crush env detection (`CRUSH=1`/`AGENT=crush`) + per-project SQLite reader (DEC-008)
+- `--label` mode: `label()` single-source-of-truth string `provider/model (harness)`; prints nothing and exits non-zero on failure so a `$(...)` caller can't substitute a guess (all three exit paths verified)
 
 **In progress**:
 
@@ -34,8 +35,8 @@ harness session transcript (ground truth) rather than asking the model
 
 **Next / future ideas**:
 
-- Thin shim so skills (memorandum, vault-wrapup) can stamp output with the real
-  incarnation instead of the generic "Claude" label
+- Shim consumers: have skills (memorandum, vault-wrapup) call `acnehuatl.py --label`
+  to stamp output with the real incarnation instead of the generic "Claude" label
 - Tests against captured sample transcripts
 - Package/entry-point so it's callable without `python3 acnehuatl.py`
 

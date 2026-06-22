@@ -185,3 +185,24 @@ pi/claude-code/opencode/unknown paths unchanged.
 
 **Files**: `acnehuatl.py`, `README.md`, `docs/CONTEXT.md`, `docs/DECISIONS.md`,
 `docs/IMPLEMENTATION.md`
+
+## Entry 10: --label mode (2026-06-21)
+
+**What**: Added a `--label` flag that prints only the canonical incarnation
+string `provider/model (harness)` on one line.
+
+**Why**: The shim idea (let skills stamp output with the real incarnation)
+needs a primitive that emits exactly one machine-capturable line and fails
+loudly rather than guessing. `--json`/human output were both too noisy.
+
+**How**:
+
+- `label(result)`: single source of truth, returns the string or `None` if no model
+- `--label` in `main()`: on success prints the line, exit 0; on failure prints
+  nothing and exits 1 (no session file) or 2 (session but no model), so
+  `LABEL=$(acnehuatl.py --label)` yields an empty string + failing exit, never a guess
+
+**Verified**: all three exit paths exercised via stubbed `identify()` — found
+(0, label), no session (1, empty), session-no-model (2, empty).
+
+**Files**: `acnehuatl.py` (commit fe49d65)
