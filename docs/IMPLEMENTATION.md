@@ -28,6 +28,7 @@ harness session transcript (ground truth) rather than asking the model
 - opencode env detection (`OPENCODE=1`) + SQLite model reader (DEC-006)
 - Crush env detection (`CRUSH=1`/`AGENT=crush`) + per-project SQLite reader (DEC-008)
 - `--label` mode: `label()` single-source-of-truth string `provider/model (harness)`; prints nothing and exits non-zero on failure so a `$(...)` caller can't substitute a guess (all three exit paths verified)
+- Provider derivation for Claude Code (DEC-009): provider read directly where the transcript has it (pi, opencode, Crush); derived from a minimal model-prefix map where it doesn't (Claude Code only). Provenance tracked via `provider_source` (`read`/`derived`/`None`); human output annotates `z.ai (derived)`, `--label` stays clean
 
 **In progress**:
 

@@ -204,11 +204,33 @@ def read_pi(session_file: Path):
     return (cur_provider or provider, cur_model or model)
 
 
+# Minimal: only model prefixes we've actually observed in real sessions.
+# Unknown prefixes -> None -> 'unknown', rather than guessing a provider
+# string we haven't validated. Grows as new real cases appear.
+PROVIDER_BY_MODEL = {
+    "claude": "anthropic",
+    "glm":    "z.ai",
+}
+
+
+def _infer_provider(model):
+    """Derive a provider from the model name. Returns None if unrecognized.
+
+    Claude Code carries no provider field in its transcript, so the provider
+    is derived from the model prefix where possible.
+    """
+    if not model:
+        return None
+    head = model.split("-")[0].lower()
+    return PROVIDER_BY_MODEL.get(head)
+
+
 def read_claude_code(session_file: Path):
     """
     Claude Code session JSONL. Assistant messages carry:
-        message.model  (e.g. "claude-sonnet-4-6")
-    No explicit provider field; provider is assumed "anthropic".
+        message.model  (e.g. "claude-sonnet-4-6", "glm-5.2")
+    No explicit provider field exists in the transcript, so provider is
+    DERIVED from the model prefix (see _infer_provider) — never assumed.
     The current model = the most recent assistant message's model.
     """
     model = None
@@ -226,7 +248,8 @@ def read_claude_code(session_file: Path):
                 mm = m.get("model")
                 if mm:
                     model = mm  # last one wins
-    return ("anthropic", model)
+    provider = _infer_provider(model)   # derived, not read
+    return (provider, model)
 
 
 def read_opencode(cwd: str):
@@ -307,19 +330,22 @@ def read_crush(cwd: str):
 def identify():
     """
     Returns a dict:
-      {harness, provider, model, session_file, cwd}
-    harness/provider/model may be None if undeterminable.
+      {harness, provider, model, provider_source, session_file, cwd}
+    harness/provider/model may be None if undeterminable. provider_source is
+    "read" (from the transcript/DB), "derived" (inferred from the model name,
+    Claude Code only), or None when no provider could be determined.
     """
     cwd = os.getcwd()
     harness, session_dir = detect_harness_session_dir(cwd)
     result = {"harness": harness, "provider": None, "model": None,
-              "session_file": None, "cwd": cwd}
+              "provider_source": None, "session_file": None, "cwd": cwd}
     if harness is None:
         return result
 
     if harness == "opencode":
         provider, model, session_id = read_opencode(cwd)
         result["provider"] = provider
+        result["provider_source"] = "read" if provider else None
         result["model"] = model
         result["session_file"] = session_id
         return result
@@ -327,6 +353,7 @@ def identify():
     if harness == "crush":
         provider, model, session_id = read_crush(cwd)
         result["provider"] = provider
+        result["provider_source"] = "read" if provider else None
         result["model"] = model
         result["session_file"] = session_id
         return result
@@ -337,8 +364,10 @@ def identify():
         return result
     if harness == "pi":
         provider, model = read_pi(sf)
+        result["provider_source"] = "read" if provider else None
     else:
         provider, model = read_claude_code(sf)
+        result["provider_source"] = "derived" if provider else None
     result["provider"] = provider
     result["model"] = model
     return result
@@ -369,6 +398,8 @@ def _emit(result: dict, as_json: bool):
         return
     h = _safe(result.get("harness") or "(unknown harness)")
     p = _safe(result.get("provider") or "(unknown provider)")
+    if result.get("provider_source") == "derived" and result.get("provider"):
+        p = f"{p} (derived)"
     m = _safe(result.get("model") or "(unknown model)")
     sf = _safe(result.get("session_file") or "(no session file)")
     cwd = result.get("cwd")

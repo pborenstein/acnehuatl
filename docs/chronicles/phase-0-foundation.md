@@ -206,3 +206,31 @@ loudly rather than guessing. `--json`/human output were both too noisy.
 (0, label), no session (1, empty), session-no-model (2, empty).
 
 **Files**: `acnehuatl.py` (commit fe49d65)
+
+## Entry 11: Derive provider for Claude Code (2026-06-26)
+
+**What**: Replaced `read_claude_code()`'s hardcoded `("anthropic", model)`
+with a derived provider, and added a `provider_source` provenance field.
+
+**Why**: A live Claude Code session ran on `glm-5.2` (Z.ai), but acnehuatl
+reported `provider: anthropic`. Scanning the transcript confirmed Claude Code
+has NO provider field anywhere, so the hardcode was always a guess, now a
+wrong one.
+
+**How**:
+
+- `PROVIDER_BY_MODEL` map + `_infer_provider(model)`: minimal
+  (`claude`→anthropic, `glm`→z.ai); unknown prefix → `None` → `unknown`
+- `read_claude_code()` returns `(_infer_provider(model), model)` instead of
+  the literal `"anthropic"`
+- `identify()` tracks `provider_source` per harness: `"read"` (pi/opencode/Crush),
+  `"derived"` (Claude Code, when inferred), `None`
+- Human output annotates derived values: `provider:  z.ai (derived)`;
+  `--json` carries the field; `--label` stays clean
+
+**Decisions**: DEC-009 (read directly where possible, derive when we must).
+
+**Verified**: live session shows `z.ai (derived)` / `z.ai/glm-5.2 (claude-code)`;
+`_infer_provider` unit-checked across known, unknown, empty, and mixed-case inputs.
+
+**Files**: `acnehuatl.py`

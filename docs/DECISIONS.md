@@ -146,3 +146,39 @@ DB location means the cwd must be readable and the DB must exist; if absent,
 the harness is detected (via env) but model/provider are reported unknown
 (honest, exit 1), consistent with opencode when its DB is missing. stdlib
 `sqlite3` is reused, so DEC-003 (no third-party deps) holds.
+
+### DEC-009: Derive provider for Claude Code, read directly elsewhere (2026-06-26)
+
+**Status**: Accepted
+
+**Context**: `read_claude_code()` hardcoded `("anthropic", model)`. That
+assumption is wrong: Claude Code can be driven by a non-Anthropic model via a
+proxy (a live session ran Claude Code on `glm-5.2`, a Z.ai model). Scanning
+every assistant-message key and top-level entry key in a real transcript
+confirmed Claude Code carries NO provider field of any kind, the only
+provider-shaped signal is `message.model` itself. The other three readers DO
+have ground truth: pi (`message.provider`), opencode (`session.model.providerID`),
+Crush (`messages.provider`). Provider is a pure function of the model name for
+all stock hosted models (no two providers ship identically-named models).
+
+**Decision**: Read provider directly where the transcript has it (pi, opencode,
+Crush). For Claude Code, where no field exists, DERIVE it from the model prefix
+via a minimal map (`claude`→anthropic, `glm`→z.ai) plus `_infer_provider()`.
+Unknown prefix → `None` → `unknown` (consistent with DEC-007's "report unknown
+when no signal"). Track provenance with a `provider_source` field: `"read"`,
+`"derived"`, or `None`. Human-readable output annotates derived values
+(`provider:  z.ai (derived)`); `--label` stays a clean incarnation string
+(provenance only in `--json`).
+
+**Alternatives**: (a) Drop provider entirely, rely on model name alone. Rejected:
+the read sources carry real routing/billing signal the model name lacks (e.g.
+opencode's `zai-coding-plan`), so the column earns its keep where it's real.
+(b) A broad prefix map covering every known lab. Rejected: aspirational guessing;
+only map prefixes we've actually observed, grow as real cases appear.
+
+**Consequences**: The original `anthropic` hardcode is gone. For Claude Code the
+provider is now correct (`z.ai` for `glm-*`) but explicitly labeled as derived,
+never masquerading as ground truth. `--label` output for this session changed
+from `anthropic/glm-5.2 (claude-code)` to `z.ai/glm-5.2 (claude-code)`.
+Unrecognized model prefixes under Claude Code now yield `unknown/<model>`
+rather than a wrong `anthropic`.

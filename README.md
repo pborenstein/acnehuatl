@@ -32,7 +32,7 @@ The script ran successfully. Output:
 
 		```
 		harness:   claude-code
-		provider:  anthropic
+		provider:  anthropic (derived)
 		model:     claude-sonnet-4-6
 		session:   /Users/philip/.claude/projects/-Users-philip-projects-nahuatl-PROJECTS-acnehuatl/176812f6-c3c3-494f-b91d-d203323233f6.jsonl
 		cwd:       /Users/philip/projects/nahuatl-PROJECTS/acnehuatl
@@ -67,9 +67,11 @@ It printed the current harness, provider, model, session path, and working direc
 2. **Finds the active session**: the most recent `.jsonl` for this cwd (pi, Claude Code), or the SQLite session row for this cwd (opencode, Crush).
 3. **Reads the current model**: walks the session record to find what model is actually generating the current turn:
    - **pi:** the most recent `model_change` entry, falling back to the first assistant message's `provider`/`model`.
-   - **Claude Code:** the most recent assistant message's `message.model` field.
+   - **Claude Code:** the most recent assistant message's `message.model` field. Claude Code records no provider in its transcript, so the provider is *derived* from the model name (e.g. `glm-*` → z.ai, `claude-*` → anthropic) and shown as such — `provider:  z.ai (derived)`. An unrecognized model yields `unknown`.
    - **opencode:** the `session.model` JSON column from `~/.local/share/opencode/opencode.db` (the `~/.claude/` JSONL opencode writes is not ground truth).
    - **Crush:** the `model`/`provider` of the most recent assistant message in the latest session, from the per-project DB at `<cwd>/.crush/crush.db`.
+
+For pi, opencode, and Crush the provider is read directly from the transcript or DB. Only Claude Code derives it, and it's labeled `(derived)` so it never masquerades as ground truth.
 4. **Returns** `(harness, provider, model)`.
 
 
