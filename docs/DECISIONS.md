@@ -182,3 +182,36 @@ never masquerading as ground truth. `--label` output for this session changed
 from `anthropic/glm-5.2 (claude-code)` to `z.ai/glm-5.2 (claude-code)`.
 Unrecognized model prefixes under Claude Code now yield `unknown/<model>`
 rather than a wrong `anthropic`.
+
+### DEC-010: Detect ZCode (2026-10-01)
+
+**Status**: Accepted
+
+**Context**: ZCode (the desktop app, bundle `dev.zcode.app`) is a fifth
+harness. Its child processes inherit a `ZCODE_*` env family
+(`ZCODE_APP_VERSION`, `ZCODE_ENV`, ...), as unambiguous a signal as Claude
+Code's `CLAUDE_CODE_*` family. Ground truth lives in a global SQLite DB at
+`~/.zcode/cli/db/db.sqlite`: the `session` table has a `directory` column
+(the project cwd), and `model_usage` records `provider_id` and `model_id`
+per model request (observed live: provider `account:zai-individual-coding-plan`,
+model `GLM-5.3`).
+
+**Decision**: Detect via any `ZCODE_*` env var (same any-one-implies rule as
+`CLAUDE_CODE_*`). Read the model from the DB with one joined query: the most
+recent `model_usage` row with `status='completed'` and
+`query_source='main_turn'` across sessions whose `directory` matches the cwd,
+ordered by `started_at`. The provider is read directly (`provider_id`), like
+pi/opencode/Crush, never derived.
+
+**Alternatives**: (a) Also match `__CFBundleIdentifier=dev.zcode.app`.
+Rejected: the `ZCODE_*` family already covers agent child processes; the
+bundle id is broader than the agent context and adds nothing. (b) Resolve the
+newest session first, then its newest row (opencode's two-step shape).
+Rejected: one `ORDER BY started_at` over the join is simpler and answers the
+same question, the most recent model request in this cwd.
+
+**Consequences**: acnehuatl supports five harnesses. ZCode provider strings
+carry an `account:` prefix by nature (`account:zai-individual-coding-plan`);
+they are reported verbatim, never rewritten. `query_source='main_turn'`
+filters out workflow subagent requests, which may run on other models.
+`started_at` is epoch milliseconds; ordering is unaffected.

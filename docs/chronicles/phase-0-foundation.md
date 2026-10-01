@@ -234,3 +234,37 @@ wrong one.
 `_infer_provider` unit-checked across known, unknown, empty, and mixed-case inputs.
 
 **Files**: `acnehuatl.py`
+
+## Entry 12: Detect ZCode (2026-10-01)
+
+**What**: Added ZCode, the desktop app, as a fifth harness: env detection
+plus `read_zcode()` on its session DB.
+
+**Why**: Running under ZCode, acnehuatl reported an unknown harness and
+exited 1: none of the four known env signals are set. The app does set a
+`ZCODE_*` family, and its DB records the real per-request provider and model,
+so both halves of the never-guess design were satisfiable. Motivated by the
+first real `--label` consumer: stamping model provenance into a website
+colophon (ekranoplan.org) read from ground truth, not self-reported.
+
+**How**:
+
+- `_detect_from_env()`: any `ZCODE_*` key → `zcode` (any-one-implies rule,
+  same as `CLAUDE_CODE_*`)
+- `read_zcode()`: read-only join of `model_usage` to `session` on
+  `directory = cwd`, filtered to `status='completed'` and
+  `query_source='main_turn'`, most recent by `started_at`; returns
+  `(provider_id, model_id, session_id)`
+- `identify()`: `zcode` branch mirrors opencode/Crush; `provider_source` is
+  `"read"`
+- README: harness list and per-harness reader bullets updated
+
+**Decisions**: DEC-010.
+
+**Verified**: live ZCode session for `/Users/philip/projects/mimeo` reports
+`harness: zcode`, `provider: account:zai-individual-coding-plan`,
+`model: GLM-5.3`, session `sess_6d05587a-a81a-4f5a-8c45-8612841a0ed2`, exit 0;
+`--label` emits `account:zai-individual-coding-plan/GLM-5.3 (zcode)`.
+`/tmp` (env present, no session) exits 1 without guessing.
+
+**Files**: `acnehuatl.py`, `README.md` (commit 2e32162)
