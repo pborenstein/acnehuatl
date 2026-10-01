@@ -6,10 +6,10 @@ Identify the current harness + model by reading the session transcript,
 NOT by asking the model (which cannot reliably self-attribute).
 
 pi and Claude Code write a JSONL session log keyed by cwd; each assistant
-message records the model that actually generated it. opencode stores its
-ground truth in a SQLite DB instead: its ~/.claude/ JSONL hardcodes a fake
-model for compatibility (see DEC-006). This script reads the right source
-per harness and reports it.
+message records the model that actually generated it. opencode, Crush, and
+ZCode store their ground truth in a SQLite DB instead: opencode's
+~/.claude/ JSONL hardcodes a fake model for compatibility (see DEC-006).
+This script reads the right source per harness and reports it.
 
 Usage:
     acnehuatl.py [--json | --label]
@@ -55,6 +55,7 @@ def _session_key(cwd: str) -> str:
 PI_DEFAULT_DIR = Path.home() / ".pi" / "agent"
 CC_DEFAULT_DIR = Path.home() / ".claude" / "projects"
 OPENCODE_DB = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+ZCODE_DB = Path.home() / ".zcode" / "cli" / "db" / "db.sqlite"
 
 
 def _detect_from_env():
@@ -68,6 +69,7 @@ def _detect_from_env():
     Claude Code:  CLAUDE_CODE_*  (a whole family; any one implies CC)
     opencode:     OPENCODE=1 (or OPENCODE_PID, OPENCODE_RUN_ID, etc.)
     Crush:        CRUSH=1 (also AGENT=crush / AI_AGENT=crush)
+    ZCode:        ZCODE_*  (a whole family; any one implies ZCode)
     """
     # Crush sets CRUSH=1 (and AGENT/AI_AGENT=crush)
     if os.environ.get("CRUSH") or os.environ.get("AGENT") == "crush" or os.environ.get("AI_AGENT") == "crush":
@@ -78,6 +80,10 @@ def _detect_from_env():
     # pi sets PI_CODING_AGENT=true (and optionally the dir/session vars)
     if os.environ.get("PI_CODING_AGENT") or os.environ.get("PI_CODING_AGENT_DIR") or os.environ.get("PI_CODING_AGENT_SESSION_DIR"):
         return "pi"
+    # ZCode sets many ZCODE_* vars (ZCODE_APP_VERSION, ZCODE_ENV, ...);
+    # presence of any implies ZCode, same rule as the CLAUDE_CODE_* family.
+    if any(k.startswith("ZCODE_") for k in os.environ):
+        return "zcode"
     # Claude Code sets many CLAUDE_CODE_* vars; presence of any implies CC.
     if any(k.startswith("CLAUDE_CODE_") or k == "CLAUDE_PROJECT_DIR" for k in os.environ):
         return "claude-code"
@@ -117,6 +123,11 @@ def detect_harness_session_dir(cwd: str):
         # Crush ground truth is a per-project SQLite DB at <cwd>/.crush/crush.db.
         # The dir is unused for crush; read_crush() opens the DB by cwd.
         return ("crush", None)
+
+    if harness == "zcode":
+        # ZCode ground truth is a global SQLite DB (ZCODE_DB). The dir is
+        # unused; read_zcode() queries the DB by the session's cwd column.
+        return ("zcode", None)
 
     if harness == "claude-code":
         return ("claude-code", _find_session_dir(CC_DEFAULT_DIR, cwd))
@@ -325,6 +336,41 @@ def read_crush(cwd: str):
     return (mrow[0], mrow[1], session_id)
 
 
+def read_zcode(cwd: str):
+    """Read the real model from ZCode's SQLite session DB.
+
+    ZCode (the desktop app, bundle dev.zcode.app) stores ground truth in
+    ~/.zcode/cli/db/db.sqlite. The `session` table has a `directory` column
+    (the project cwd); the `model_usage` table records `provider_id` and
+    `model_id` per model request. The current model is the most recent
+    completed main-turn row across the sessions for that directory. The
+    provider is read directly, never derived.
+
+    Returns (provider, model, session_id). Any may be None if not found.
+    """
+    import sqlite3
+    if not ZCODE_DB.is_file():
+        return (None, None, None)
+    try:
+        # Read-only, parameterized: no writes, no injection. The DB lives in
+        # WAL mode; the read works while the app holds it open.
+        con = sqlite3.connect(f"file:{ZCODE_DB}?mode=ro", uri=True)
+        row = con.execute(
+            "SELECT mu.provider_id, mu.model_id, s.id "
+            "FROM model_usage mu JOIN session s ON mu.session_id = s.id "
+            "WHERE s.directory = ? AND mu.status = 'completed' "
+            "AND mu.query_source = 'main_turn' "
+            "ORDER BY mu.started_at DESC LIMIT 1",
+            (cwd,),
+        ).fetchone()
+        con.close()
+    except sqlite3.Error:
+        return (None, None, None)
+    if not row:
+        return (None, None, None)
+    return (row[0], row[1], row[2])
+
+
 # ---------- entry point ----------
 
 def identify():
@@ -352,6 +398,14 @@ def identify():
 
     if harness == "crush":
         provider, model, session_id = read_crush(cwd)
+        result["provider"] = provider
+        result["provider_source"] = "read" if provider else None
+        result["model"] = model
+        result["session_file"] = session_id
+        return result
+
+    if harness == "zcode":
+        provider, model, session_id = read_zcode(cwd)
         result["provider"] = provider
         result["provider_source"] = "read" if provider else None
         result["model"] = model
